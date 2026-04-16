@@ -17,21 +17,21 @@ A complete DevSecOps pipeline built with GitHub Actions. Integrates secret detec
 ```
   Push / PR
       │
-      ├─── security-scan.yml ──────────────────────────────────────────────┐
-      │       ├── Secret Detection (Gitleaks)                              │
-      │       │     └── Full commit history + custom .gitleaks.toml        │
-      │       ├── Dependency Scan (OWASP + npm audit + pip-audit)          │
-      │       │     └── CVE lookup against NVD/OSV                         │
-      │       ├── SAST (Semgrep)                                           │
-      │       │     └── Community rules + 15 custom rules in rules/        │
-      │       └── Pipeline Summary                                         │
-      │                                                                    │
+      ├─── security-scan.yml ─────────────────────────────────────────────┐
+      │       ├── Secret Detection (Gitleaks)                             │
+      │       │     └── Full commit history + custom .gitleaks.toml       │
+      │       ├── Dependency Scan (OWASP + npm audit + pip-audit)         │
+      │       │     └── CVE lookup against NVD/OSV                        │
+      │       ├── SAST (Semgrep)                                          │
+      │       │     └── Community rules + 15 custom rules in rules/       │
+      │       └── Pipeline Summary                                        │
+      │                                                                   │
       ├─── container-scan.yml (on Dockerfile changes) ─────────────────┐  │
-      │       ├── Dockerfile Lint (Hadolint)                            │  │
-      │       ├── Image Vulnerability Scan (Trivy)                      │  │
-      │       └── Image Configuration Audit (Trivy config)              │  │
-      │                                                                 │  │
-      ├─── iac-scan.yml (on .tf / k8s changes) ───────────────────┐   │  │
+      │       ├── Dockerfile Lint (Hadolint)                           │  │
+      │       ├── Image Vulnerability Scan (Trivy)                     │  │
+      │       └── Image Configuration Audit (Trivy config)             │  │
+      │                                                                │  │
+      ├─── iac-scan.yml (on .tf / k8s changes) ───────────────────┐    │  │
       │       ├── IaC Policy Scan (Checkov)                        │   │  │
       │       ├── Terraform Security (tfsec)                       │   │  │
       │       └── Terraform Validate + Format Check                │   │  │
