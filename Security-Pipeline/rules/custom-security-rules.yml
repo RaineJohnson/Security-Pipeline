@@ -1,0 +1,197 @@
+rules:
+  # ===========================================================================
+  # Hardcoded Credentials
+  # ===========================================================================
+
+  - id: hardcoded-password-assignment
+    patterns:
+      - pattern-either:
+          - pattern: $VAR = "..."
+          - pattern: $VAR = '...'
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i).*(password|passwd|pwd|secret|token|api_key|apikey|api_secret).*
+      - pattern-not: $VAR = ""
+      - pattern-not: $VAR = "changeme"
+      - pattern-not: $VAR = "placeholder"
+      - pattern-not: $VAR = "your-key-here"
+    message: >
+      Potential hardcoded credential in variable '$VAR'. Move secrets to
+      environment variables or a secrets manager (AWS Secrets Manager,
+      HashiCorp Vault, or .env files excluded from version control).
+    languages: [python, javascript, typescript]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      category: security
+      confidence: MEDIUM
+
+  - id: hardcoded-connection-string
+    pattern-either:
+      - pattern: |
+          "...$DB://$USER:$PASS@..."
+      - pattern: |
+          '...$DB://$USER:$PASS@...'
+    message: >
+      Database connection string with embedded credentials detected.
+      Use environment variables for database URLs:
+      `os.environ.get('DATABASE_URL')` or `process.env.DATABASE_URL`
+    languages: [python, javascript, typescript]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      category: security
+
+  # ===========================================================================
+  # Insecure Cryptography
+  # ===========================================================================
+
+  - id: weak-hash-algorithm
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)
+      - pattern: crypto.createHash("md5")
+      - pattern: crypto.createHash("sha1")
+      - pattern: crypto.createHash('md5')
+      - pattern: crypto.createHash('sha1')
+    message: >
+      MD5 and SHA-1 are cryptographically broken. Use SHA-256 or SHA-3
+      for integrity checks, and bcrypt/Argon2 for password hashing.
+    languages: [python, javascript, typescript]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-328: Use of Weak Hash"
+      owasp: "A02:2021 - Cryptographic Failures"
+      category: security
+
+  - id: insecure-random-for-security
+    pattern-either:
+      - pattern: random.random()
+      - pattern: random.randint(...)
+      - pattern: random.choice(...)
+      - pattern: Math.random()
+    message: >
+      Standard random number generators are not cryptographically secure.
+      Use `secrets` module (Python) or `crypto.randomBytes()` (Node.js)
+      for security-sensitive operations like token generation.
+    languages: [python, javascript]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-338: Use of Cryptographically Weak PRNG"
+      category: security
+
+  - id: ecb-mode-encryption
+    pattern-either:
+      - pattern: AES.new($KEY, AES.MODE_ECB)
+      - pattern: AES.new($KEY, AES.MODE_ECB, ...)
+    message: >
+      ECB mode does not provide semantic security — identical plaintext
+      blocks produce identical ciphertext. Use AES-GCM or AES-CBC with
+      a random IV for each encryption operation.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      category: security
+
+  # ===========================================================================
+  # Injection Prevention
+  # ===========================================================================
+
+  - id: shell-injection-via-format
+    patterns:
+      - pattern-either:
+          - pattern: os.system(f"...")
+          - pattern: os.system("..." + $VAR)
+          - pattern: os.system("...%s..." % $VAR)
+          - pattern: os.popen(f"...")
+          - pattern: subprocess.call(f"...", shell=True)
+          - pattern: subprocess.Popen(f"...", shell=True)
+    message: >
+      User input in shell commands via string formatting enables command
+      injection. Use subprocess.run() with a list of arguments instead
+      of shell=True, and never interpolate user input into commands.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A03:2021 - Injection"
+      category: security
+
+  - id: sql-string-concatenation
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $CURSOR.execute("..." + $VAR + "...")
+          - pattern: |
+              $CURSOR.execute(f"...{$VAR}...")
+          - pattern: |
+              $CURSOR.execute("...%s..." % $VAR)
+    message: >
+      SQL query built with string concatenation is vulnerable to SQL
+      injection. Use parameterized queries instead:
+      `cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))`
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A03:2021 - Injection"
+      category: security
+
+  # ===========================================================================
+  # Insecure Defaults
+  # ===========================================================================
+
+  - id: flask-debug-enabled
+    pattern-either:
+      - pattern: app.run(..., debug=True, ...)
+      - pattern: app.run(debug=True)
+    message: >
+      Flask debug mode exposes the interactive debugger and reloader in
+      production. This allows arbitrary code execution. Set debug=False
+      or use environment-based configuration.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-489: Active Debug Code"
+      owasp: "A05:2021 - Security Misconfiguration"
+      category: security
+
+  - id: cors-wildcard
+    pattern-either:
+      - pattern: |
+          "Access-Control-Allow-Origin": "*"
+      - pattern: |
+          'Access-Control-Allow-Origin': '*'
+      - pattern: |
+          res.header("Access-Control-Allow-Origin", "*")
+      - pattern: |
+          res.setHeader("Access-Control-Allow-Origin", "*")
+    message: >
+      Wildcard CORS allows any origin to make authenticated requests.
+      Restrict Access-Control-Allow-Origin to trusted domains.
+    languages: [python, javascript, typescript]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      owasp: "A05:2021 - Security Misconfiguration"
+      category: security
+
+  - id: missing-csrf-protection-express
+    patterns:
+      - pattern: |
+          app.post($ROUTE, ...)
+      - pattern-not-inside: |
+          app.use(csrf(...))
+          ...
+    message: >
+      POST route without CSRF protection. Use the `csurf` or `csrf-csrf`
+      middleware to prevent cross-site request forgery attacks.
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-352: Cross-Site Request Forgery"
+      owasp: "A01:2021 - Broken Access Control"
+      category: security
+      confidence: LOW

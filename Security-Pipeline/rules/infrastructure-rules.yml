@@ -1,0 +1,82 @@
+rules:
+  # ===========================================================================
+  # Dockerfile Security
+  # ===========================================================================
+
+  - id: dockerfile-run-as-root
+    patterns:
+      - pattern: |
+          FROM ...
+          ...
+      - pattern-not: |
+          FROM ...
+          ...
+          USER $NON_ROOT
+          ...
+    message: >
+      Container does not set a non-root USER. Running containers as root
+      increases the blast radius of a container escape. Add:
+      `RUN adduser --disabled-password appuser && USER appuser`
+    languages: [dockerfile]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      category: security
+
+  - id: dockerfile-latest-tag
+    pattern: |
+      FROM $IMAGE:latest
+    message: >
+      Using ':latest' tag makes builds non-reproducible and may pull
+      images with unpatched vulnerabilities. Pin to a specific version:
+      `FROM python:3.12-slim` instead of `FROM python:latest`
+    languages: [dockerfile]
+    severity: WARNING
+    metadata:
+      category: security
+      confidence: HIGH
+
+  - id: dockerfile-add-instead-of-copy
+    pattern: |
+      ADD $SRC $DST
+    message: >
+      ADD can auto-extract archives and fetch remote URLs, which may
+      introduce unexpected behavior. Use COPY unless you specifically
+      need ADD's extraction functionality.
+    languages: [dockerfile]
+    severity: INFO
+    metadata:
+      category: security
+
+  # ===========================================================================
+  # YAML Configuration Security
+  # ===========================================================================
+
+  - id: k8s-privileged-container
+    patterns:
+      - pattern: |
+          securityContext:
+            ...
+            privileged: true
+    message: >
+      Privileged containers have full access to the host kernel. This
+      effectively disables all container isolation. Remove `privileged: true`
+      and grant only specific capabilities needed.
+    languages: [yaml]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      category: security
+
+  - id: k8s-host-network
+    patterns:
+      - pattern: |
+          hostNetwork: true
+    message: >
+      hostNetwork shares the host's network namespace with the pod,
+      bypassing network policies. Remove unless absolutely required
+      for network monitoring or similar use cases.
+    languages: [yaml]
+    severity: WARNING
+    metadata:
+      category: security

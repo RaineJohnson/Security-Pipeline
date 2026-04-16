@@ -1,0 +1,28 @@
+# ===========================================================================
+# INTENTIONALLY VULNERABLE DEPENDENCIES — FOR TESTING ONLY
+# ===========================================================================
+# These versions contain known CVEs that the dependency scanner will flag.
+# DO NOT install these in production.
+# ===========================================================================
+
+# CVE-2023-30861 — Cookie handling vulnerability
+Flask==2.2.0
+
+# CVE-2023-37920 — Certificate verification bypass
+certifi==2022.12.7
+
+# CVE-2023-32681 — Proxy credential leakage
+requests==2.28.0
+
+# CVE-2022-42969 — ReDoS vulnerability
+py==1.11.0
+
+# CVE-2024-3651 — SSRF via Unicode normalization
+idna==3.6
+
+# CVE-2023-43804 — Cookie leakage via redirects
+urllib3==1.26.5
+
+# Safe packages (for contrast)
+pycryptodome==3.20.0
+python-dotenv==1.0.0
